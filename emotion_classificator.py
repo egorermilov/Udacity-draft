@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import scipy.misc as misc
 from sklearn.preprocessing import OneHotEncoder
+import pickle
 
 class EmotionDetector:
     def __init__(self):
@@ -16,9 +17,20 @@ class EmotionDetector:
         enc = OneHotEncoder(n_values=num_labels)
         return enc.fit_transform(np.array(x).reshape(-1, 1)).toarray()
 
-    def load_training_dataset(self, pagepath, perc_validation=0.1, perc_test=0.1, image_size=48):
-        data_frame = pd.read_csv(pagepath)
-        data_frame['Pixels'] = data_frame['Pixels'].apply(lambda x: np.fromstring(x, sep=" ") / 255.0).dropna()
+    def load_training_dataset(
+            self,
+            filename_orig,
+            perc_validation=0.1,
+            perc_test=0.1,
+            image_size=48,
+            save_pickle=True,
+            filename_pickle="datasets_train_valid_test.pickle"
+    ):
+        data_frame = pd.read_csv(filename_orig)
+        data_frame['Pixels'] = (
+            data_frame['Pixels']
+                .apply(lambda x: np.fromstring(x, sep=" ") / 255.0)
+                .dropna())
 
         df_images = np.vstack(data_frame['Pixels']).reshape(-1, image_size, image_size) #, 1)
         print(df_images)
@@ -39,6 +51,18 @@ class EmotionDetector:
         self.validation_images = df_images[:marker_validation]
         self.test_images = df_images[marker_validation:marker_test]
         self.train_images = df_images[marker_test:]
+
+        if save_pickle:
+            with open(filename_pickle, "wb") as file:
+                save = {
+                    "validation_labels": self.validation_labels,
+                    "test_labels": self.test_labels,
+                    "train_labels": self.train_labels,
+                    "validation_images": self.validation_images,
+                    "test_images": self.test_images,
+                    "train_images": self.train_images
+                }
+                pickle.dump(save, file)
 
 
 
