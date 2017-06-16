@@ -5,20 +5,42 @@ from sklearn.preprocessing import OneHotEncoder
 
 class EmotionDetector:
     def __init__(self):
-        pass
+        self.validation_labels = None
+        self.test_labels = None
+        self.train_labels = None
+        self.validation_images = None
+        self.test_images = None
+        self.train_images = None
 
     def make_onehot(self,x,num_labels=7):
         enc = OneHotEncoder(n_values=num_labels)
-
         return enc.fit_transform(np.array(x).reshape(-1, 1)).toarray()
 
     def load_training_dataset(self, pagepath, perc_validation=0.1, perc_test=0.1, image_size=48):
         data_frame = pd.read_csv(pagepath)
         data_frame['Pixels'] = data_frame['Pixels'].apply(lambda x: np.fromstring(x, sep=" ") / 255.0).dropna()
+
         df_images = np.vstack(data_frame['Pixels']).reshape(-1, image_size, image_size) #, 1)
         print(df_images)
+
         df_labels = self.make_onehot(data_frame['Emotion'])
         print(df_labels)
+
+        shuffle = np.random.permutation(df_images.shape[0])
+        df_images = df_images[shuffle]
+        df_labels = df_labels[shuffle]
+
+        marker_validation = int(df_images.shape[0] * perc_validation)
+        marker_test = marker_validation + int(df_images.shape[0] * perc_test)
+
+        self.validation_labels = df_labels[:marker_validation]
+        self.test_labels = df_labels[marker_validation:marker_test]
+        self.train_labels = df_labels[marker_test:]
+        self.validation_images = df_images[:marker_validation]
+        self.test_images = df_images[marker_validation:marker_test]
+        self.train_images = df_images[marker_test:]
+
+
 
 
 if __name__ == '__main__':
