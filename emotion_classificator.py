@@ -88,6 +88,51 @@ class EmotionDetector:
         )
         return tensor_x, tensor_y, tensor_keep_prob
 
+    def layer_conv2d_maxpool(x_tensor, conv_num_outputs, conv_ksize, conv_strides, pool_ksize, pool_strides):
+        """
+        Apply convolution then max pooling to x_tensor
+        :param x_tensor: TensorFlow Tensor
+        :param conv_num_outputs: Number of outputs for the convolutional layer
+        :param conv_ksize: kernal size 2-D Tuple for the convolutional layer
+        :param conv_strides: Stride 2-D Tuple for convolution
+        :param pool_ksize: kernal size 2-D Tuple for pool
+        :param pool_strides: Stride 2-D Tuple for pool
+        : return: A tensor that represents convolution and max pooling of x_tensor
+        """
+        weights = tf.Variable(
+            tf.random_normal(
+                [
+                    conv_ksize[0],
+                    conv_ksize[1],
+                    x_tensor.get_shape().as_list()[-1],
+                    conv_num_outputs
+                ],
+                stddev=0.1
+            )
+        )
+        bias = tf.Variable(
+            tf.zeros(conv_num_outputs, dtype=tf.float32)
+        )
+        conv = tf.nn.conv2d(
+            x_tensor,
+            weights,
+            strides=[1, conv_strides[0], conv_strides[1], 1],
+            padding='SAME'
+
+        )
+        conv = tf.nn.relu(
+            tf.nn.bias_add(conv, bias)
+        )
+        conv = tf.nn.max_pool(
+            conv,
+            ksize=[1, pool_ksize[0], pool_ksize[1], 1],
+            strides=[1, pool_strides[0], pool_strides[1], 1],
+            padding='SAME'
+        )
+        return conv
+
+
+
 
 if __name__ == '__main__':
     app = EmotionDetector()
