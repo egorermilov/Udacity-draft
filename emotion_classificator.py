@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import tensorflow as tf
 import scipy.misc as misc
 from sklearn.preprocessing import OneHotEncoder
 import pickle
@@ -69,6 +70,23 @@ class EmotionDetector:
         batch_images = images[offset: offset + batch_size]
         batch_labels = labels[offset:offset + batch_size]
         return batch_images, batch_labels
+
+    def input_tesors(self, image_shape, n_classes):
+        tensor_x = tf.placeholder(
+            tf.float32,
+            [None, image_shape[0], image_shape[1], image_shape[2]],
+            name='x'
+        )
+        tensor_y = tf.placeholder(
+            tf.float32,
+            [None, n_classes],
+            name='y'
+        )
+        tensor_keep_prob = tf.placeholder(
+            tf.float32,
+            name='keep_prob'
+        )
+        return tensor_x, tensor_y, tensor_keep_prob
 
 
 if __name__ == '__main__':
