@@ -33,7 +33,7 @@ class EmotionDetector:
                 .apply(lambda x: np.fromstring(x, sep=" ") / 255.0)
                 .dropna())
 
-        df_images = np.vstack(data_frame['Pixels']).reshape(-1, image_size, image_size) #, 1)
+        df_images = np.vstack(data_frame['Pixels']).reshape(-1, image_size, image_size, 1)
         print(df_images)
 
         df_labels = self.make_onehot(data_frame['Emotion'])
@@ -72,6 +72,12 @@ class EmotionDetector:
         return batch_images, batch_labels
 
     def input_tesors(self, image_shape, n_classes):
+        """
+        Returns 3 input tensors
+        :param image_shape: Shape of the images
+        :param n_classes: Number of classes
+        :return: Tensors for image inputs, for label inputs and for keep_probability
+        """
         tensor_x = tf.placeholder(
             tf.float32,
             [None, image_shape[0], image_shape[1], image_shape[2]],
