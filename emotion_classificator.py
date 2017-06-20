@@ -94,7 +94,15 @@ class EmotionDetector:
         )
         return tensor_x, tensor_y, tensor_keep_prob
 
-    def layer_conv2d_maxpool(x_tensor, conv_num_outputs, conv_ksize, conv_strides, pool_ksize, pool_strides):
+    def layer_conv2d_maxpool(
+            self,
+            x_tensor,
+            conv_num_outputs,
+            conv_ksize,
+            conv_strides,
+            pool_ksize,
+            pool_strides
+    ):
         """
         Apply convolution then max pooling to x_tensor
         :param x_tensor: TensorFlow Tensor
@@ -129,15 +137,14 @@ class EmotionDetector:
         conv = tf.nn.relu(
             tf.nn.bias_add(conv, bias)
         )
-        conv = tf.nn.max_pool(
+        return tf.nn.max_pool(
             conv,
             ksize=[1, pool_ksize[0], pool_ksize[1], 1],
             strides=[1, pool_strides[0], pool_strides[1], 1],
             padding='SAME'
         )
-        return conv
 
-    def layer_flatten(x_tensor):
+    def layer_flatten(self, x_tensor):
         """
         Flatten x_tensor to (Batch Size, Flattened Image Size)
         : x_tensor: A tensor of size (Batch Size, ...), where ... are the image dimensions.
@@ -147,6 +154,40 @@ class EmotionDetector:
             x_tensor,
             [-1, (x_tensor.shape[1] * x_tensor.shape[2] * x_tensor.shape[3]).value]
         )
+
+    def layer_fully_connected(self, x_tensor, num_outputs):
+        """
+        Apply a fully connected layer to x_tensor using weight and bias
+        : x_tensor: A 2-D tensor where the first dimension is batch size.
+        : num_outputs: The number of output that the new tensor should be.
+        : return: A 2-D tensor where the second dimension is num_outputs.
+        """
+        weights = tf.Variable(
+            tf.random_normal(
+                [x_tensor.shape[1].value, num_outputs],
+                stddev=0.1
+            )
+        )
+        bias = tf.Variable(tf.zeros([num_outputs]))
+        return tf.nn.relu(
+            tf.add(tf.matmul(x_tensor, weights), bias)
+        )
+
+    def layer_output(self, x_tensor, num_outputs):
+        """
+        Apply a output layer to x_tensor using weight and bias
+        : x_tensor: A 2-D tensor where the first dimension is batch size.
+        : num_outputs: The number of output that the new tensor should be.
+        : return: A 2-D tensor where the second dimension is num_outputs.
+        """
+        weights = tf.Variable(
+            tf.random_normal(
+                [x_tensor.shape[1].value, num_outputs],
+                stddev=0.1
+            )
+        )
+        bias = tf.Variable(tf.zeros([num_outputs]))
+        return tf.add(tf.matmul(x_tensor, weights), bias)
 
 
 
