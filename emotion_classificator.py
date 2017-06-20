@@ -189,6 +189,38 @@ class EmotionDetector:
         bias = tf.Variable(tf.zeros([num_outputs]))
         return tf.add(tf.matmul(x_tensor, weights), bias)
 
+    def neural_network(self, x, keep_prob):
+        """
+        Create a neural network model
+        : x: Placeholder tensor that holds image data.
+        : keep_prob: Placeholder tensor that hold dropout keep probability.
+        : return: Tensor that represents logits
+        """
+
+        conv1 = self.layer_conv2d_maxpool(
+            x,
+            conv_num_outputs=64,
+            conv_ksize=[5, 5],
+            conv_strides=[2, 2],
+            pool_ksize=[2, 2],
+            pool_strides=[2, 2]
+        )
+        conv2 = self.layer_conv2d_maxpool(
+            conv1,
+            conv_num_outputs=64,
+            conv_ksize=[3, 3],
+            conv_strides=[1, 1],
+            pool_ksize=[2, 2],
+            pool_strides=[2, 2]
+        )
+
+
+        conv_f = self.layer_flatten(conv2)
+
+        conv_fc1 = tf.nn.dropout(self.layer_fully_connected(conv_f, 256), keep_prob)
+        conv_fc2 = tf.nn.dropout(self.layer_fully_connected(conv_fc1, 128), keep_prob)
+
+        return self.layer_output(conv_fc2, 7)
 
 
 
