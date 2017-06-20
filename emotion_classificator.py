@@ -137,6 +137,17 @@ class EmotionDetector:
         )
         return conv
 
+    def layer_flatten(x_tensor):
+        """
+        Flatten x_tensor to (Batch Size, Flattened Image Size)
+        : x_tensor: A tensor of size (Batch Size, ...), where ... are the image dimensions.
+        : return: A tensor of size (Batch Size, Flattened Image Size).
+        """
+        return tf.reshape(
+            x_tensor,
+            [-1, (x_tensor.shape[1] * x_tensor.shape[2] * x_tensor.shape[3]).value]
+        )
+
 
 
 
