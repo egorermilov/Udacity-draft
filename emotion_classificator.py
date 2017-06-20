@@ -4,6 +4,8 @@ import tensorflow as tf
 import scipy.misc as misc
 from sklearn.preprocessing import OneHotEncoder
 import pickle
+from matplotlib import pyplot as plt
+import matplotlib.image as mpimg
 
 class EmotionDetector:
     def __init__(self):
@@ -64,6 +66,12 @@ class EmotionDetector:
                     "train_images": self.train_images
                 }
                 pickle.dump(save, file)
+
+    def load_custom_image(self, path='my_pic.jpg'):
+        img = mpimg.imread(path)
+        gray = np.dot(img[..., :3], [0.299, 0.587, 0.114])
+        plt.imshow(gray, cmap=plt.get_cmap('gray'))
+        plt.show()
 
     def next_batch(self, images, labels, step, batch_size):
         offset = (step * batch_size) % (images.shape[0] - batch_size)
@@ -226,4 +234,5 @@ class EmotionDetector:
 
 if __name__ == '__main__':
     app = EmotionDetector()
-    app.load_training_dataset("train.csv")
+    #app.load_training_dataset("train.csv")
+    app.load_custom_image()
