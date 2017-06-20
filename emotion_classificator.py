@@ -64,7 +64,11 @@ class EmotionDetector:
                 }
                 pickle.dump(save, file)
 
-
+    def next_batch(self, images, labels, step, batch_size):
+        offset = (step * batch_size) % (images.shape[0] - batch_size)
+        batch_images = images[offset: offset + batch_size]
+        batch_labels = labels[offset:offset + batch_size]
+        return batch_images, batch_labels
 
 
 if __name__ == '__main__':
