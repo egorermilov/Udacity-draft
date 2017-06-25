@@ -6,7 +6,7 @@ from sklearn.preprocessing import OneHotEncoder
 import pickle
 from matplotlib import pyplot as plt
 import matplotlib.image as mpimg
-
+from sklearn.metrics import precision_score
 
 
 def make_onehot(x,num_labels=7):
@@ -21,6 +21,13 @@ save_pickle=True
 filename_pickle="datasets_train_valid_test.pickle"
 
 data_frame = pd.read_csv(filename_orig)
+dataset_bal = data_frame.loc[data_frame["Emotion"] != 6,:]
+dataset_imb = data_frame.loc[data_frame["Emotion"] == 6,:]
+
+dataset_imb = dataset_imb.sample(n=450)
+
+dataset = dataset_bal.append(dataset_imb)
+
 data_frame['Pixels'] = (
     data_frame['Pixels']
         .apply(lambda x: np.fromstring(x, sep=" ") / 255.0)
@@ -242,7 +249,7 @@ def train_step(session, optimizer, keep_probability, batch_image, batch_label):
         }
     )
 
-def print_statistics(session, batch_image, batch_label, cost, accuracy):
+def print_statistics(session, batch_image, batch_label, cost, accuracy, type="VALIDATION"):
     """
     Print information about loss and validation accuracy
     : session: Current TensorFlow session
@@ -267,11 +274,30 @@ def print_statistics(session, batch_image, batch_label, cost, accuracy):
             keep_prob: 1.0
         }
     )
-    print("Validation Loss = {} ; Validation Accuracy = {}".format(loss, accuracy))
+    # precision = session.run(
+    #     precision,
+    #     feed_dict={
+    #         x: batch_image,
+    #         y: batch_label,
+    #         keep_prob: 1.0
+    #     }
+    # )
+    print("{} :: Loss = {} ; Accuracy = {} ".format(type, loss, accuracy))
+    return loss, accuracy
+
+def plot_stat(values,label, color='g'):
+    plt.plot(range(len(values)), values, '-', color=color, label=label)
+    # plt.plot(range(len(validation_accuracy)), validation_loss, '-', color='b', label='Recall')
+    plt.title("Training")
+    plt.xlabel("iteration")
+    plt.ylabel('Score')
+    plt.legend(loc='upper left')
+    #plt.ylim([0, 1])
+    plt.show()
 
 
 
-epochs = 40
+epochs = 5
 batch_size = 512
 keep_probability = 0.7
 save_model_path='./emotion_classification'
@@ -296,35 +322,49 @@ accuracy = tf.reduce_mean(
     tf.cast(correct_prediction, tf.float32),
     name='accuracy'
 )
+#precision = tf.reduce_mean(tf.divide(tf.reduce_sum(tf.multiply(logits, y), 0), tf.reduce_sum(logits, 0)), name="precision")
+#precision = tf.metrics.precision(tf.argmax(y,1), tf.argmax(logits,1))
+#precision = precision_score(tf.argmax(y,1).eval(session=sess), tf.argmax(logits,1).eval(session=sess))
 
+
+validation_accuracy = []
+validation_loss = []
 
 print('>> TRAINING')
-with tf.Session() as sess:
-    # Initializing the variables
-    sess.run(tf.global_variables_initializer())
+sess =  tf.Session()
+# Initializing the variables
+sess.run(tf.global_variables_initializer())
 
-    # Training cycle
-    for epoch in range(epochs):
-        print('Epoch {:>2}:  '.format(epoch + 1))
-        # Loop over all batches
-        n_batches = int(train_images.shape[0] / batch_size)
-        for batch_i in range(1, n_batches + 1):
-            batch_features, batch_labels = next_batch(
-                    train_images,
-                    train_labels,
-                    batch_i,
-                    batch_size=batch_size)
-            #train_step(sess, optimizer, keep_probability, batch_features, batch_labels)
-            train_step(
-                session=sess,
-                optimizer=optimizer,
-                keep_probability=keep_probability,
-                batch_image=batch_features,
-                batch_label=batch_labels
-            )
-            print_statistics(sess, test_images, test_labels, cost, accuracy)
+# Training cycle
+for epoch in range(epochs):
+    print('Epoch {:>2}:  '.format(epoch + 1))
+    # Loop over all batches
+    n_batches = int(train_images.shape[0] / batch_size)
+    for batch_i in range(1, n_batches + 1):
+        batch_features, batch_labels = next_batch(
+                train_images,
+                train_labels,
+                batch_i,
+                batch_size=batch_size)
+        #train_step(sess, optimizer, keep_probability, batch_features, batch_labels)
+        train_step(
+            session=sess,
+            optimizer=optimizer,
+            keep_probability=keep_probability,
+            batch_image=batch_features,
+            batch_label=batch_labels
+        )
+        v_loss, v_acc = print_statistics(sess, validation_images, validation_labels, cost, accuracy, type="VALIDATION")
+        validation_loss.append(v_loss)
+        validation_accuracy.append(v_acc)
 
-    # Save Model
-    saver = tf.train.Saver()
-    save_path = saver.save(sess, save_model_path)
+print_statistics(sess, test_images, test_labels, cost, accuracy, type="TEST")
+
+plot_stat(validation_accuracy, "Validation Accuracy")
+plot_stat(validation_loss, "Validation Loss")
+
+
+# Save Model
+saver = tf.train.Saver()
+save_path = saver.save(sess, save_model_path)
 
