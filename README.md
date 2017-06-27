@@ -39,3 +39,7 @@ To see the results open one of the following file:
 https://inclass.kaggle.com/c/facial-keypoints-detector/download/train.csv
 
 Note that you have to login to be able to download the dataset.
+
+### Proposal review
+
+https://review.udacity.com/#!/reviews/564205
