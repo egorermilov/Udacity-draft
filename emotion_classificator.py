@@ -13,60 +13,6 @@ def make_onehot(x,num_labels=7):
     enc = OneHotEncoder(n_values=num_labels)
     return enc.fit_transform(np.array(x).reshape(-1, 1)).toarray()
 
-filename_orig="train.csv"
-perc_validation=0.1
-perc_test=0.1
-image_size=48
-save_pickle=True
-filename_pickle="datasets_train_valid_test.pickle"
-
-data_frame = pd.read_csv(filename_orig)
-dataset_bal = data_frame.loc[data_frame["Emotion"] != 6,:]
-dataset_imb = data_frame.loc[data_frame["Emotion"] == 6,:]
-
-dataset_imb = dataset_imb.sample(n=450)
-
-dataset = dataset_bal.append(dataset_imb)
-
-data_frame['Pixels'] = (
-    data_frame['Pixels']
-        .apply(lambda x: np.fromstring(x, sep=" ") / 255.0)
-        .dropna())
-
-df_images = np.vstack(data_frame['Pixels']).reshape(-1, image_size, image_size, 1)
-print(df_images)
-
-df_labels = make_onehot(data_frame['Emotion'])
-print(df_labels)
-
-shuffle = np.random.permutation(df_images.shape[0])
-df_images = df_images[shuffle]
-df_labels = df_labels[shuffle]
-
-marker_validation = int(df_images.shape[0] * perc_validation)
-marker_test = marker_validation + int(df_images.shape[0] * perc_test)
-
-validation_labels = df_labels[:marker_validation]
-test_labels = df_labels[marker_validation:marker_test]
-train_labels = df_labels[marker_test:]
-validation_images = df_images[:marker_validation]
-test_images = df_images[marker_validation:marker_test]
-train_images = df_images[marker_test:]
-
-if save_pickle:
-    with open(filename_pickle, "wb") as file:
-        save = {
-            "validation_labels": validation_labels,
-            "test_labels": test_labels,
-            "train_labels": train_labels,
-            "validation_images": validation_images,
-            "test_images": test_images,
-            "train_images": train_images
-        }
-        pickle.dump(save, file)
-
-
-
 def load_custom_image(path='my_pic.jpg', show=False):
     img = mpimg.imread(path)
     gray = np.dot(img[..., :3], [0.299, 0.587, 0.114])
@@ -208,28 +154,39 @@ def neural_network(x, keep_prob):
 
     conv1 = layer_conv2d_maxpool(
         x,
-        conv_num_outputs=32,
-        conv_ksize=[5, 5],
-        conv_strides=[2, 2],
+        conv_num_outputs=16,
+        conv_ksize=[5,5],
+        conv_strides=[1,1],
         pool_ksize=[2, 2],
         pool_strides=[2, 2]
     )
+
     conv2 = layer_conv2d_maxpool(
         conv1,
+        conv_num_outputs=32,
+        conv_ksize=[5, 5],
+        conv_strides=[1,1],
+        pool_ksize=[2, 2],
+        pool_strides=[2, 2]
+    )
+
+    conv3 = layer_conv2d_maxpool(
+        conv2,
         conv_num_outputs=64,
-        conv_ksize=[3, 3],
-        conv_strides=[1, 1],
+        conv_ksize=[5,5],
+        conv_strides=[1,1],
         pool_ksize=[2, 2],
         pool_strides=[2, 2]
     )
 
 
-    conv_f = layer_flatten(conv2)
+    conv_f = layer_flatten(conv3)
 
-    conv_fc1 = tf.nn.dropout(layer_fully_connected(conv_f, 256), keep_prob)
-    conv_fc2 = tf.nn.dropout(layer_fully_connected(conv_fc1, 128), keep_prob)
+    conv_fc1 = tf.nn.dropout(layer_fully_connected(conv_f, 512), keep_prob)
+    conv_fc2 = tf.nn.dropout(layer_fully_connected(conv_fc1, 256), keep_prob)
+    conv_fc3 = tf.nn.dropout(layer_fully_connected(conv_fc2, 128), keep_prob)
 
-    return layer_output(conv_fc2, 7)
+    return layer_output(conv_fc3, 7)
 
 def train_step(session, optimizer, keep_probability, batch_image, batch_label):
     """
@@ -297,9 +254,62 @@ def plot_stat(values,label, color='g'):
 
 
 
-epochs = 5
+filename_orig="train.csv"
+perc_validation=0.1
+perc_test=0.1
+image_size=48
+save_pickle=True
+filename_pickle="datasets_train_valid_test.pickle"
+
+data_frame = pd.read_csv(filename_orig)
+dataset_bal = data_frame.loc[data_frame["Emotion"] != 6,:]
+dataset_imb = data_frame.loc[data_frame["Emotion"] == 6,:]
+
+dataset_imb = dataset_imb.sample(n=450)
+
+dataset = dataset_bal.append(dataset_imb)
+
+data_frame['Pixels'] = (
+    data_frame['Pixels']
+        .apply(lambda x: np.fromstring(x, sep=" ") / 255.0)
+        .dropna())
+
+df_images = np.vstack(data_frame['Pixels']).reshape(-1, image_size, image_size, 1)
+#print(df_images)
+
+df_labels = make_onehot(data_frame['Emotion'])
+#print(df_labels)
+
+shuffle = np.random.permutation(df_images.shape[0])
+df_images = df_images[shuffle]
+df_labels = df_labels[shuffle]
+
+marker_validation = int(df_images.shape[0] * perc_validation)
+marker_test = marker_validation + int(df_images.shape[0] * perc_test)
+
+validation_labels = df_labels[:marker_validation]
+test_labels = df_labels[marker_validation:marker_test]
+train_labels = df_labels[marker_test:]
+validation_images = df_images[:marker_validation]
+test_images = df_images[marker_validation:marker_test]
+train_images = df_images[marker_test:]
+
+if save_pickle:
+    with open(filename_pickle, "wb") as file:
+        save = {
+            "validation_labels": validation_labels,
+            "test_labels": test_labels,
+            "train_labels": train_labels,
+            "validation_images": validation_images,
+            "test_images": test_images,
+            "train_images": train_images
+        }
+        pickle.dump(save, file)
+
+
+epochs = 55
 batch_size = 512
-keep_probability = 0.7
+keep_probability = 0.9
 save_model_path='./emotion_classification'
 
 tf.reset_default_graph()
@@ -354,9 +364,9 @@ for epoch in range(epochs):
             batch_image=batch_features,
             batch_label=batch_labels
         )
-        v_loss, v_acc = print_statistics(sess, validation_images, validation_labels, cost, accuracy, type="VALIDATION")
-        validation_loss.append(v_loss)
-        validation_accuracy.append(v_acc)
+    v_loss, v_acc = print_statistics(sess, validation_images, validation_labels, cost, accuracy, type="VALIDATION")
+    validation_loss.append(v_loss)
+    validation_accuracy.append(v_acc)
 
 print_statistics(sess, test_images, test_labels, cost, accuracy, type="TEST")
 
