@@ -4,7 +4,7 @@ by Egor Ermilov
 
 ### Description
 
-In this project, I classified images from the CIFAR-10 dataset. The dataset consists of airplanes, dogs, cats, and other objects. The dataset has been preprocessed, then a convolutional neural network has been trained on all the samples. I normalized the images, one-hot encoded the labels, built convolutional layers, max pool layers, and fully connected layers. At the end, you'll see their predictions on the sample images.
+In this project, I classified emotions on the facial photos from the Kaggle dataset. The dataset consists of 7 types of emotions. The dataset has been preprocessed, then a convolutional neural network has been trained on all the samples. I normalized the images, one-hot encoded the labels, built convolutional layers, max pool layers, and fully connected layers. 
 
 ### Install
 
