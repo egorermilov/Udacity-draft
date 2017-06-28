@@ -1,27 +1,46 @@
 import pandas as pd
 import numpy as np
 import tensorflow as tf
-import scipy.misc as misc
+#import scipy.misc as misc
 from sklearn.preprocessing import OneHotEncoder
 import pickle
 from matplotlib import pyplot as plt
-import matplotlib.image as mpimg
-from sklearn.metrics import precision_score
+#import matplotlib.image as mpimg
 
+
+# ====================================================================================================================
+# Funtions
+# ====================================================================================================================
 
 def make_onehot(x,num_labels=7):
+    """
+    Creates dummy variables for a given column
+
+    :param x: original column
+    :param num_labels: number of classes in the column
+    :return: dummy-coded columns
+    """
     enc = OneHotEncoder(n_values=num_labels)
     return enc.fit_transform(np.array(x).reshape(-1, 1)).toarray()
 
-def load_custom_image(path='my_pic.jpg', show=False):
-    img = mpimg.imread(path)
-    gray = np.dot(img[..., :3], [0.299, 0.587, 0.114])
-    if show:
-        plt.imshow(gray, cmap=plt.get_cmap('gray'))
-        plt.show()
-    return np.resize(gray, (1, 48, 48, 1))
+# def load_custom_image(path='my_pic.jpg', show=False):
+#     img = mpimg.imread(path)
+#     gray = np.dot(img[..., :3], [0.299, 0.587, 0.114])
+#     if show:
+#         plt.imshow(gray, cmap=plt.get_cmap('gray'))
+#         plt.show()
+#     return np.resize(gray, (1, 48, 48, 1))
 
 def next_batch(images, labels, step, batch_size):
+    """
+    Takes a batch from a dataset step by step
+
+    :param images: original dataset (features)
+    :param labels: original dataset (labels)
+    :param step: number of step
+    :param batch_size: size of every batch
+    :return: batch
+    """
     offset = (step * batch_size) % (images.shape[0] - batch_size)
     batch_images = images[offset: offset + batch_size]
     batch_labels = labels[offset:offset + batch_size]
@@ -30,6 +49,7 @@ def next_batch(images, labels, step, batch_size):
 def input_tesors(image_shape, n_classes):
     """
     Returns 3 input tensors
+
     :param image_shape: Shape of the images
     :param n_classes: Number of classes
     :return: Tensors for image inputs, for label inputs and for keep_probability
@@ -59,7 +79,7 @@ def layer_conv2d_maxpool(
         pool_strides
 ):
     """
-    Apply convolution then max pooling to x_tensor
+    Applies convolution with relu activation and max pooling to x_tensor
     :param x_tensor: TensorFlow Tensor
     :param conv_num_outputs: Number of outputs for the convolutional layer
     :param conv_ksize: kernal size 2-D Tuple for the convolutional layer
@@ -101,7 +121,7 @@ def layer_conv2d_maxpool(
 
 def layer_flatten(x_tensor):
     """
-    Flatten x_tensor to (Batch Size, Flattened Image Size)
+    Flattens x_tensor to (Batch Size, Flattened Image Size)
     : x_tensor: A tensor of size (Batch Size, ...), where ... are the image dimensions.
     : return: A tensor of size (Batch Size, Flattened Image Size).
     """
@@ -112,7 +132,7 @@ def layer_flatten(x_tensor):
 
 def layer_fully_connected(x_tensor, num_outputs):
     """
-    Apply a fully connected layer to x_tensor using weight and bias
+    Applies a fully connected layer with relu activation to x_tensor using weight and bias
     : x_tensor: A 2-D tensor where the first dimension is batch size.
     : num_outputs: The number of output that the new tensor should be.
     : return: A 2-D tensor where the second dimension is num_outputs.
@@ -130,7 +150,7 @@ def layer_fully_connected(x_tensor, num_outputs):
 
 def layer_output(x_tensor, num_outputs):
     """
-    Apply a output layer to x_tensor using weight and bias
+    Applies an output layer to x_tensor using weight and bias
     : x_tensor: A 2-D tensor where the first dimension is batch size.
     : num_outputs: The number of output that the new tensor should be.
     : return: A 2-D tensor where the second dimension is num_outputs.
@@ -146,7 +166,7 @@ def layer_output(x_tensor, num_outputs):
 
 def neural_network(x, keep_prob):
     """
-    Create a neural network model
+    Creates a neural network model
     : x: Placeholder tensor that holds image data.
     : keep_prob: Placeholder tensor that hold dropout keep probability.
     : return: Tensor that represents logits
@@ -190,7 +210,7 @@ def neural_network(x, keep_prob):
 
 def train_step(session, optimizer, keep_probability, batch_image, batch_label):
     """
-    Optimize the session on a batch of images and labels
+    Optimizes the session on a batch of images and labels
     : session: Current TensorFlow session
     : optimizer: TensorFlow optimizer function
     : keep_probability: keep probability
@@ -214,6 +234,7 @@ def print_statistics(session, batch_image, batch_label, cost, accuracy, type="VA
     : label_batch: Batch of Numpy label data
     : cost: TensorFlow cost function
     : accuracy: TensorFlow accuracy function
+    : return: validation loss, validation accuracy
     """
     loss = session.run(
         cost,
@@ -231,18 +252,18 @@ def print_statistics(session, batch_image, batch_label, cost, accuracy, type="VA
             keep_prob: 1.0
         }
     )
-    # precision = session.run(
-    #     precision,
-    #     feed_dict={
-    #         x: batch_image,
-    #         y: batch_label,
-    #         keep_prob: 1.0
-    #     }
-    # )
     print("{} :: Loss = {} ; Accuracy = {} ".format(type, loss, accuracy))
     return loss, accuracy
 
-def plot_stat(values,label, color='g'):
+def plot_stat(values, label, color='g'):
+    """
+    Creates a plot
+
+    :param values: dataset to visualize
+    :param label: plot label
+    :param color: line color
+    :return: plot
+    """
     plt.plot(range(len(values)), values, '-', color=color, label=label)
     # plt.plot(range(len(validation_accuracy)), validation_loss, '-', color='b', label='Recall')
     plt.title("Training")
@@ -252,41 +273,67 @@ def plot_stat(values,label, color='g'):
     #plt.ylim([0, 1])
     plt.show()
 
+# ====================================================================================================================
+# Hyperparameters and options
+# ====================================================================================================================
 
-
+# Original Kaggle Dataset
 filename_orig="train.csv"
+# Ratios to split into training, testing and validation datasets
 perc_validation=0.1
 perc_test=0.1
+# Size of the original images
 image_size=48
+# Save the split datasets
 save_pickle=True
 filename_pickle="datasets_train_valid_test.pickle"
+# Number of iterations durint the training phase
+epochs = 55
+# Batch size
+batch_size = 512
+# Dropout keep probability
+keep_probability = 0.9
+# Path to save tensorflow model
+save_model_path='./emotion_classification'
 
+# ====================================================================================================================
+# Data wrangling and preprocessing
+# ====================================================================================================================
+
+# Reading the original Kaggle dataset
 data_frame = pd.read_csv(filename_orig)
-dataset_bal = data_frame.loc[data_frame["Emotion"] != 6,:]
-dataset_imb = data_frame.loc[data_frame["Emotion"] == 6,:]
 
-dataset_imb = dataset_imb.sample(n=450)
+# Balancing the dataset
+dataset_bal = data_frame.loc[(data_frame["Emotion"] != 6) & (data_frame["Emotion"] != 3),:]
+dataset_imb1 = data_frame.loc[data_frame["Emotion"] == 6,:]
+dataset_imb1 = dataset_imb1.sample(n=450)
+dataset_imb2 = data_frame.loc[data_frame["Emotion"] == 3,:]
+dataset_imb2 = dataset_imb2.sample(n=450)
+dataset = dataset_bal.append(dataset_imb1)
+dataset = dataset.append(dataset_imb2)
 
-dataset = dataset_bal.append(dataset_imb)
-
+# Normalizing the dataset
 data_frame['Pixels'] = (
     data_frame['Pixels']
         .apply(lambda x: np.fromstring(x, sep=" ") / 255.0)
         .dropna())
 
+# Reshaping to a proper shape for tensorflow
 df_images = np.vstack(data_frame['Pixels']).reshape(-1, image_size, image_size, 1)
 #print(df_images)
 
+# Creating dummy variables
 df_labels = make_onehot(data_frame['Emotion'])
 #print(df_labels)
 
+# Shuffling the dataset
 shuffle = np.random.permutation(df_images.shape[0])
 df_images = df_images[shuffle]
 df_labels = df_labels[shuffle]
 
+# Splitting into validation, testing and training datasets
 marker_validation = int(df_images.shape[0] * perc_validation)
 marker_test = marker_validation + int(df_images.shape[0] * perc_test)
-
 validation_labels = df_labels[:marker_validation]
 test_labels = df_labels[marker_validation:marker_test]
 train_labels = df_labels[marker_test:]
@@ -294,6 +341,7 @@ validation_images = df_images[:marker_validation]
 test_images = df_images[marker_validation:marker_test]
 train_images = df_images[marker_test:]
 
+# Pickling the datasets
 if save_pickle:
     with open(filename_pickle, "wb") as file:
         save = {
@@ -307,23 +355,29 @@ if save_pickle:
         pickle.dump(save, file)
 
 
-epochs = 55
-batch_size = 512
-keep_probability = 0.9
-save_model_path='./emotion_classification'
+# ====================================================================================================================
+# Training the model
+# ====================================================================================================================
+
 
 tf.reset_default_graph()
 
+# defining input tensors
 x, y, keep_prob = input_tesors((48, 48, 1), 7)
 
+# Defining the model
 logits = neural_network(x, keep_prob)
 logits = tf.identity(logits, name='logits')
 
+# Variable to minimize during the training step
 cost = tf.reduce_mean(
     tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=y)
 )
+
+# Training algorithm
 optimizer = tf.train.AdamOptimizer().minimize(cost)
 
+# Defining the accuracy metric
 correct_prediction = tf.equal(
     tf.argmax(logits, 1),
     tf.argmax(y, 1)
@@ -332,16 +386,16 @@ accuracy = tf.reduce_mean(
     tf.cast(correct_prediction, tf.float32),
     name='accuracy'
 )
-#precision = tf.reduce_mean(tf.divide(tf.reduce_sum(tf.multiply(logits, y), 0), tf.reduce_sum(logits, 0)), name="precision")
-#precision = tf.metrics.precision(tf.argmax(y,1), tf.argmax(logits,1))
-#precision = precision_score(tf.argmax(y,1).eval(session=sess), tf.argmax(logits,1).eval(session=sess))
 
-
+# Store variables to plot them later
 validation_accuracy = []
 validation_loss = []
 
 print('>> TRAINING')
+
+# Starting a session
 sess =  tf.Session()
+
 # Initializing the variables
 sess.run(tf.global_variables_initializer())
 
@@ -356,7 +410,6 @@ for epoch in range(epochs):
                 train_labels,
                 batch_i,
                 batch_size=batch_size)
-        #train_step(sess, optimizer, keep_probability, batch_features, batch_labels)
         train_step(
             session=sess,
             optimizer=optimizer,
@@ -364,12 +417,15 @@ for epoch in range(epochs):
             batch_image=batch_features,
             batch_label=batch_labels
         )
+    # print validation statistics for this epoch
     v_loss, v_acc = print_statistics(sess, validation_images, validation_labels, cost, accuracy, type="VALIDATION")
     validation_loss.append(v_loss)
     validation_accuracy.append(v_acc)
 
+# Print final test statistics
 print_statistics(sess, test_images, test_labels, cost, accuracy, type="TEST")
 
+# Plot validation metrics
 plot_stat(validation_accuracy, "Validation Accuracy")
 plot_stat(validation_loss, "Validation Loss")
 
